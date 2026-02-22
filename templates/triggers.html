@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+{% block title %}VibeShield — Trigger Map{% endblock %}
+{% block content %}
+<div class="triggers-page">
+    <div class="card">
+        <h2 class="card-title">🗺️ Spending Trigger Map</h2>
+        <p class="card-desc">Discover when and why you spend impulsively</p>
+        <div class="heatmap-container">
+            <div id="heatmapEmpty" class="chart-empty">
+                Make at least 3 transactions to see your spending heatmap appear here!
+            </div>
+            <canvas id="heatmapCanvas" class="hidden" width="960" height="320"></canvas>
+        </div>
+    </div>
+
+    <div class="triggers-grid">
+        <div class="card">
+            <h3 class="card-title">🏷️ Category by Time of Day</h3>
+            <div class="chart-container"><canvas id="catHourChart"></canvas></div>
+            <div id="catHourEmpty" class="chart-empty hidden">More data needed for category patterns</div>
+        </div>
+        <div class="card">
+            <h3 class="card-title">🔥 Top Spending Categories</h3>
+            <div id="topCatsList" class="top-cats-list">
+                <p class="empty-text">Categories will appear as you make transactions.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">💡 AI Insights</h3>
+        <div id="insightsList" class="insights-list">
+            <p class="empty-text">Insights generate after a few transactions. Try the demo scenarios!</p>
+        </div>
+    </div>
+
+    <!-- Interconnection: Trigger × Context -->
+    <div class="card">
+        <h3 class="card-title">🔗 Trigger × Context Intelligence</h3>
+        <p class="card-desc">Your triggers don't exist in isolation — they connect to your mood, goals, and spending patterns</p>
+        <div class="trigger-context-grid" id="triggerContext">
+            <div class="trigger-ctx-card" id="tcMood">
+                <div class="tc-icon">🧠</div>
+                <div class="tc-label">Current Mood</div>
+                <div class="tc-value" id="tcMoodVal">—</div>
+                <div class="tc-hint">Mood affects which triggers activate</div>
+            </div>
+            <div class="trigger-ctx-card" id="tcGoal">
+                <div class="tc-icon">🎯</div>
+                <div class="tc-label">Active Goal</div>
+                <div class="tc-value" id="tcGoalVal">—</div>
+                <div class="tc-hint">Goals change your trigger sensitivity</div>
+            </div>
+            <div class="trigger-ctx-card" id="tcStreak">
+                <div class="tc-icon">🔥</div>
+                <div class="tc-label">Control Streak</div>
+                <div class="tc-value" id="tcStreakVal">—</div>
+                <div class="tc-hint">Longer streaks weaken trigger power</div>
+            </div>
+            <div class="trigger-ctx-card" id="tcSaved">
+                <div class="tc-icon">💰</div>
+                <div class="tc-label">Total Saved</div>
+                <div class="tc-value" id="tcSavedVal">—</div>
+                <div class="tc-hint">Every cancelled impulse builds this</div>
+            </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:12px;">
+            💡 <strong>How it connects:</strong> Your <a href="/mood" style="color:var(--accent)">Mood</a> data feeds into trigger sensitivity.
+            The <a href="/" style="color:var(--accent)">Analyze</a> page uses these triggers to calibrate your impulse score.
+            Your <a href="/dashboard" style="color:var(--accent)">Dashboard</a> tracks how often you overcome each trigger.
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => { loadTriggerData(); loadTriggerContext(); });
+
+async function loadTriggerContext() {
+    try {
+        const res = await fetch('/api/transactions/context');
+        const ctx = await res.json();
+        if (ctx.mood_status) {
+            const m = ctx.mood_status;
+            document.getElementById('tcMoodVal').textContent = `${m.emoji || ''} ${m.mood || 'Unknown'}`.trim();
+        }
+        if (ctx.active_goal) {
+            const g = ctx.active_goal;
+            document.getElementById('tcGoalVal').textContent = `${g.name}: ${g.progress.toFixed(0)}%`;
+        }
+        if (ctx.control_streak !== undefined) {
+            document.getElementById('tcStreakVal').textContent = ctx.control_streak + ' days';
+        }
+        if (ctx.total_saved !== undefined) {
+            document.getElementById('tcSavedVal').textContent = '₹' + ctx.total_saved.toLocaleString();
+        }
+    } catch(e) { console.error('Context load error', e); }
+}
+
+async function loadTriggerData() {
+    try {
+        const res = await fetch('/api/dashboard/triggers');
+        const data = await res.json();
+        if (data.error) return;
+        renderHeatmap(data.heatmap, data.transaction_count);
+        renderCatHour(data.category_by_hour);
+        renderTopCats(data.top_categories);
+        renderInsights(data.insights);
+    } catch(e) { console.error(e); }
+}
+
+function renderHeatmap(grid, txCount) {
+    if (!txCount || txCount < 3) {
+        document.getElementById('heatmapEmpty').classList.remove('hidden');
+        document.getElementById('heatmapCanvas').classList.add('hidden');
+        return;
+    }
+    document.getElementById('heatmapEmpty').classList.add('hidden');
+    const canvas = document.getElementById('heatmapCanvas');
+    canvas.classList.remove('hidden');
+    const ctx = canvas.getContext('2d');
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const cellW = 36, cellH = 36, padL = 50, padT = 30;
+
+    // Find max
+    let maxVal = 0;
+    grid.forEach(row => row.forEach(v => { if(v > maxVal) maxVal = v; }));
+    if (maxVal === 0) maxVal = 1;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillStyle = '#8892b0';
+
+    // Hour labels
+    for (let h = 0; h < 24; h++) {
+        if (h % 3 === 0) ctx.fillText(h + ':00', padL + h * cellW + 4, padT - 8);
+    }
+
+    // Day labels + cells
+    for (let d = 0; d < 7; d++) {
+        ctx.fillStyle = '#8892b0';
+        ctx.fillText(days[d], 5, padT + d * cellH + 24);
+        for (let h = 0; h < 24; h++) {
+            const intensity = grid[d][h] / maxVal;
+            const r = Math.round(46 + intensity * 209);
+            const g = Math.round(213 - intensity * 142);
+            const b = Math.round(115 - intensity * 28);
+            ctx.fillStyle = `rgba(${r},${g},${b},${Math.max(0.1, intensity)})`;
+            ctx.beginPath();
+            ctx.roundRect(padL + h * cellW, padT + d * cellH, cellW - 3, cellH - 3, 4);
+            ctx.fill();
+            if (grid[d][h] > 0 && intensity > 0.3) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '9px Inter';
+                ctx.fillText('₹' + (grid[d][h]/1000).toFixed(1) + 'k', padL + h*cellW + 2, padT + d*cellH + 22);
+                ctx.font = '11px Inter';
+            }
+        }
+    }
+}
+
+function renderCatHour(catHours) {
+    const cats = Object.keys(catHours);
+    if (cats.length === 0) {
+        document.getElementById('catHourEmpty').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('catHourEmpty').classList.add('hidden');
+    const colors = ['#ff4757','#ffa502','#2ed573','#1e90ff','#a55eea','#ff6b81','#70a1ff','#eccc68'];
+    const datasets = cats.slice(0, 6).map((cat, i) => ({
+        label: cat.replace('_',' ').replace(/\b\w/g,l=>l.toUpperCase()),
+        data: catHours[cat],
+        borderColor: colors[i % colors.length],
+        backgroundColor: colors[i % colors.length] + '20',
+        fill: true, tension: 0.4, pointRadius: 0
+    }));
+    new Chart(document.getElementById('catHourChart'), {
+        type: 'line',
+        data: { labels: Array.from({length:24}, (_,i) => i+':00'), datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#ccd6f6', font: {size:10} } } },
+            scales: {
+                x: { ticks: { color: '#8892b0', maxTicksLimit: 12 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { ticks: { color: '#8892b0', callback: v => '₹'+v }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+}
+
+function renderTopCats(cats) {
+    const el = document.getElementById('topCatsList');
+    if (!cats || cats.length === 0) { el.innerHTML = '<p class="empty-text">No categories yet</p>'; return; }
+    const maxAmt = cats[0][1];
+    el.innerHTML = cats.map(([cat, amt]) => {
+        const pct = (amt / maxAmt * 100).toFixed(0);
+        return `<div class="top-cat-item">
+            <div class="top-cat-info">
+                <span class="top-cat-name">${cat.replace('_',' ').replace(/\b\w/g,l=>l.toUpperCase())}</span>
+                <span class="top-cat-amount">₹${amt.toLocaleString()}</span>
+            </div>
+            <div class="top-cat-bar"><div class="top-cat-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }).join('');
+}
+
+function renderInsights(insights) {
+    const el = document.getElementById('insightsList');
+    if (!insights || insights.length === 0) { el.innerHTML = '<p class="empty-text">No insights yet</p>'; return; }
+    el.innerHTML = insights.map(i => `<div class="insight-item">${i}</div>`).join('');
+}
+</script>
+{% endblock %}

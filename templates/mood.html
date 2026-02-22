@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% block title %}VibeShield — Mood Tracker{% endblock %}
+{% block content %}
+<div class="mood-page">
+    <div class="mood-grid">
+        <!-- Mood Check-in -->
+        <div class="card">
+            <h2 class="card-title">😊 How Are You Feeling?</h2>
+            <p class="card-desc">Your mood influences your impulse detection accuracy</p>
+            <div class="mood-selector" id="moodSelector">
+                <button class="mood-btn" data-mood="happy" data-emoji="😊" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😊</span><span>Happy</span>
+                </button>
+                <button class="mood-btn" data-mood="excited" data-emoji="🤩" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">🤩</span><span>Excited</span>
+                </button>
+                <button class="mood-btn" data-mood="neutral" data-emoji="😐" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😐</span><span>Neutral</span>
+                </button>
+                <button class="mood-btn" data-mood="bored" data-emoji="🥱" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">🥱</span><span>Bored</span>
+                </button>
+                <button class="mood-btn" data-mood="tired" data-emoji="😴" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😴</span><span>Tired</span>
+                </button>
+                <button class="mood-btn" data-mood="anxious" data-emoji="😰" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😰</span><span>Anxious</span>
+                </button>
+                <button class="mood-btn" data-mood="sad" data-emoji="😔" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😔</span><span>Sad</span>
+                </button>
+                <button class="mood-btn" data-mood="angry" data-emoji="😡" onclick="selectMood(this)">
+                    <span class="mood-emoji-big">😡</span><span>Angry</span>
+                </button>
+            </div>
+            <div class="mood-intensity hidden" id="intensitySection">
+                <label>Intensity: <span id="intensityVal">5</span>/10</label>
+                <input type="range" id="moodIntensity" min="1" max="10" value="5"
+                       oninput="document.getElementById('intensityVal').textContent=this.value">
+                <textarea id="moodNotes" placeholder="What's on your mind? (optional)" rows="2"></textarea>
+                <button class="btn btn-primary btn-full" onclick="submitMood()">
+                    ✅ Log This Mood
+                </button>
+            </div>
+        </div>
+
+        <!-- Current Mood Status -->
+        <div class="card">
+            <h3 class="card-title">🎯 Current Mood Status</h3>
+            <div id="currentMood" class="current-mood">
+                <p class="empty-text">No mood logged yet today. How are you feeling?</p>
+            </div>
+            <div class="mood-history" id="moodHistory">
+                <h4>Recent Entries</h4>
+                <div id="moodHistoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Correlation Charts -->
+    <div class="card">
+        <h3 class="card-title">📊 Mood-to-Money Correlation</h3>
+        <p class="card-desc">How your emotions influence your spending — linked to your impulse analysis & trigger data</p>
+        <div class="mood-charts-row">
+            <div class="chart-container"><canvas id="moodSpendChart"></canvas></div>
+            <div class="chart-container"><canvas id="moodTimelineChart"></canvas></div>
+        </div>
+        <div id="moodChartEmpty" class="chart-empty hidden">
+            Log a few moods and make some transactions to see the correlation!
+        </div>
+    </div>
+
+    <!-- Mood-Risk Connection -->
+    <div class="card">
+        <h3 class="card-title">🔗 Mood × Impulse Connection</h3>
+        <p class="card-desc">Your mood directly adjusts the impulse scoring engine (10% weight factor)</p>
+        <div id="moodRiskMap" class="mood-risk-map">
+            <div class="risk-row high">😡 Angry → <strong>95%</strong> impulse risk boost</div>
+            <div class="risk-row high">😔 Sad → <strong>85%</strong> impulse risk boost</div>
+            <div class="risk-row high">😰 Anxious → <strong>80%</strong> impulse risk boost</div>
+            <div class="risk-row medium">🥱 Bored → <strong>75%</strong> impulse risk boost</div>
+            <div class="risk-row medium">😴 Tired → <strong>70%</strong> impulse risk boost</div>
+            <div class="risk-row medium">🤩 Excited → <strong>40%</strong> impulse risk boost</div>
+            <div class="risk-row low">😐 Neutral → <strong>25%</strong> impulse risk boost</div>
+            <div class="risk-row low">😊 Happy → <strong>15%</strong> impulse risk boost</div>
+        </div>
+        <p class="card-desc" style="margin-top:12px">💡 Log your mood <strong>before</strong> analyzing a purchase for the most accurate impulse score. Your mood data also flows into Dashboard stats, Trigger patterns, and AI interceptor messages.</p>
+    </div>
+
+    <!-- Mood Insights -->
+    <div class="card">
+        <h3 class="card-title">💡 Mood Insights</h3>
+        <div id="moodInsights" class="insights-list">
+            <p class="empty-text">Insights will appear after logging moods and making transactions.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedMood = null;
+
+function selectMood(btn) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMood = { mood: btn.dataset.mood, emoji: btn.dataset.emoji };
+    document.getElementById('intensitySection').classList.remove('hidden');
+}
+
+async function submitMood() {
+    if (!selectedMood) return;
+    const intensity = parseInt(document.getElementById('moodIntensity').value);
+    const notes = document.getElementById('moodNotes').value;
+    try {
+        const res = await fetch('/api/mood/checkin', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({...selectedMood, intensity, notes})
+        });
+        const data = await res.json();
+        if (data.status === 'logged') {
+            showToast(`${selectedMood.emoji} Mood logged! ${data.message}`, 'success');
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+            document.getElementById('intensitySection').classList.add('hidden');
+            document.getElementById('moodNotes').value = '';
+            loadMoodData();
+        }
+    } catch(e) { showToast('Error logging mood', 'error'); }
+}
+
+async function loadMoodData() {
+    try {
+        // Load current mood
+        const mRes = await fetch('/api/mood/recent');
+        const mData = await mRes.json();
+        const el = document.getElementById('currentMood');
+        if (mData.mood) {
+            const m = mData.mood;
+            el.innerHTML = `
+                <div class="current-mood-display">
+                    <span class="current-mood-emoji">${m.emoji}</span>
+                    <div>
+                        <div class="current-mood-name">${m.mood.charAt(0).toUpperCase() + m.mood.slice(1)}</div>
+                        <div class="current-mood-time">Intensity: ${m.intensity}/10</div>
+                    </div>
+                </div>`;
+        }
+
+        // Load correlation
+        const cRes = await fetch('/api/mood/correlation');
+        const cData = await cRes.json();
+
+        // Render mood history
+        if (cData.recent_moods && cData.recent_moods.length > 0) {
+            document.getElementById('moodHistoryList').innerHTML = cData.recent_moods.slice(0,5).map(m =>
+                `<div class="mood-history-item">
+                    <span>${m.emoji}</span>
+                    <span>${m.mood}</span>
+                    <span class="mood-time">${new Date(m.timestamp).toLocaleString()}</span>
+                </div>`
+            ).join('');
+        }
+
+        // Render charts
+        if (cData.mood_spend && Object.keys(cData.mood_spend).length > 0) {
+            document.getElementById('moodChartEmpty').classList.add('hidden');
+            renderMoodSpendChart(cData.mood_spend);
+            if (cData.mood_timeline && cData.mood_timeline.length > 0) {
+                renderMoodTimeline(cData.mood_timeline);
+            }
+        } else {
+            document.getElementById('moodChartEmpty').classList.remove('hidden');
+        }
+
+        // Render insights
+        if (cData.insights) {
+            const il = document.getElementById('moodInsights');
+            il.innerHTML = cData.insights.map(i => `<div class="insight-item">${i}</div>`).join('');
+        }
+    } catch(e) { console.error(e); }
+}
+
+function renderMoodSpendChart(moodSpend) {
+    const ctx = document.getElementById('moodSpendChart');
+    const emojis = {happy:'😊',neutral:'😐',sad:'😔',angry:'😡',tired:'😴',bored:'🥱',anxious:'😰',excited:'🤩'};
+    const colors = {happy:'#2ed573',neutral:'#70a1ff',sad:'#5352ed',angry:'#ff4757',tired:'#a55eea',bored:'#ffa502',anxious:'#ff6b81',excited:'#eccc68'};
+    const labels = Object.keys(moodSpend).map(m => (emojis[m]||'🔵')+' '+m.charAt(0).toUpperCase()+m.slice(1));
+    const vals = Object.values(moodSpend);
+    const bgColors = Object.keys(moodSpend).map(m => colors[m] || '#70a1ff');
+
+    if (window._moodSpendChart) window._moodSpendChart.destroy();
+    window._moodSpendChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Avg Spend (₹)', data: vals, backgroundColor: bgColors, borderRadius: 6 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: '#ccd6f6' }, grid: { display: false } },
+                y: { ticks: { color: '#8892b0', callback: v => '₹'+v }, grid: { color: 'rgba(255,255,255,0.05)' } }
+            }
+        }
+    });
+}
+
+function renderMoodTimeline(timeline) {
+    const ctx = document.getElementById('moodTimelineChart');
+    const moodNums = {happy:7,excited:6,neutral:5,bored:4,tired:3,anxious:2,sad:1,angry:0};
+    if (window._moodTimeChart) window._moodTimeChart.destroy();
+    window._moodTimeChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: timeline.map(t => t.date),
+            datasets: [
+                { label: 'Mood Level', data: timeline.map(t => moodNums[t.mood] ?? 5),
+                  borderColor: '#a55eea', backgroundColor: '#a55eea20', fill: true, tension: 0.4, yAxisID: 'y' },
+                { label: 'Spending (₹)', data: timeline.map(t => t.spend),
+                  borderColor: '#ffa502', backgroundColor: '#ffa50220', fill: true, tension: 0.4, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: '#ccd6f6' } } },
+            scales: {
+                x: { ticks: { color: '#8892b0', maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { position: 'left', ticks: { color: '#a55eea', callback: v => ['😡','😔','😰','😴','🥱','😐','🤩','😊'][v] || '' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0, max: 7 },
+                y1: { position: 'right', ticks: { color: '#ffa502', callback: v => '₹'+v }, grid: { display: false } }
+            }
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', loadMoodData);
+</script>
+{% endblock %}

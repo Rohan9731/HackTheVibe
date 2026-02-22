@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeShield — Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">🛡️</div>
+                <h1>VibeShield</h1>
+                <p class="login-subtitle">The Impulse Intelligence Layer</p>
+                <p class="login-desc">AI-powered smart wallet that detects impulse spending<br>and helps you make mindful financial decisions.</p>
+            </div>
+            <div class="login-features">
+                <div class="feature-pill">🧠 Impulse Score Engine</div>
+                <div class="feature-pill">🔒 Dopamine Lock</div>
+                <div class="feature-pill">🗺️ Trigger Mapping</div>
+                <div class="feature-pill">😊 Mood Correlation</div>
+                <div class="feature-pill">🔮 Regret Simulator</div>
+                <div class="feature-pill">👥 Accountability</div>
+            </div>
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <input type="text" id="username" placeholder="Enter your name to start..."
+                           autocomplete="off" autofocus required maxlength="30">
+                    <button type="submit" class="login-btn">
+                        Start <span>→</span>
+                    </button>
+                </div>
+            </form>
+            <p class="login-hint">Each user gets their own private dashboard & analytics</p>
+        </div>
+    </div>
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('username').value.trim();
+            if (!name) return;
+            const btn = document.querySelector('.login-btn');
+            btn.innerHTML = 'Loading...';
+            btn.disabled = true;
+            try {
+                const res = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username: name})
+                });
+                const data = await res.json();
+                if (data.redirect || data.status === 'ok') {
+                    window.location.href = '/';
+                }
+            } catch(err) {
+                btn.innerHTML = 'Start <span>→</span>';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

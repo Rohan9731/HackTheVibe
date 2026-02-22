@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}VibeShield — Dashboard{% endblock %}
+{% block content %}
+<div class="dashboard-page">
+    <!-- Top Stats Row -->
+    <div class="stats-row" id="statsRow">
+        <div class="stat-card">
+            <div class="stat-icon">💳</div>
+            <div class="stat-value" id="statTx">0</div>
+            <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">💰</div>
+            <div class="stat-value" id="statSpent">₹0</div>
+            <div class="stat-label">Total Spent</div>
+        </div>
+        <div class="stat-card accent">
+            <div class="stat-icon">🛡️</div>
+            <div class="stat-value" id="statSaved">₹0</div>
+            <div class="stat-label">Money Saved</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🔥</div>
+            <div class="stat-value" id="statStreak">0</div>
+            <div class="stat-label">Control Streak</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📊</div>
+            <div class="stat-value" id="statAvgScore">0</div>
+            <div class="stat-label">Avg Impulse</div>
+        </div>
+    </div>
+
+    <!-- Gamification Level -->
+    <div class="card level-card" id="levelCard">
+        <div class="level-info">
+            <span class="level-emoji" id="levelEmoji">🚀</span>
+            <span class="level-name" id="levelName">Just Starting</span>
+            <span class="level-tier" id="levelTier">Tier 0</span>
+        </div>
+        <div class="level-progress">
+            <div class="level-bar"><div class="level-fill" id="levelFill"></div></div>
+            <span class="level-hint" id="levelHint">Cancel an impulse purchase to level up!</span>
+        </div>
+    </div>
+
+    <!-- Interconnection: Cross-Mode Context -->
+    <div class="card">
+        <h3 class="card-title">🔗 Cross-Mode Intelligence</h3>
+        <div class="cross-mode-row" id="crossModeRow">
+            <div class="cross-mode-item">
+                <span class="cm-emoji">🧠</span>
+                <span class="cm-label">Mood</span>
+                <span class="cm-value" id="cmMood">—</span>
+            </div>
+            <div class="cross-mode-divider"></div>
+            <div class="cross-mode-item">
+                <span class="cm-emoji">🎯</span>
+                <span class="cm-label">Goal</span>
+                <span class="cm-value" id="cmGoal">—</span>
+            </div>
+            <div class="cross-mode-divider"></div>
+            <div class="cross-mode-item">
+                <span class="cm-emoji">⚡</span>
+                <span class="cm-label">Top Trigger</span>
+                <span class="cm-value" id="cmTrigger">—</span>
+            </div>
+            <div class="cross-mode-divider"></div>
+            <div class="cross-mode-item">
+                <span class="cm-emoji">⚙️</span>
+                <span class="cm-label">Lock Sensitivity</span>
+                <span class="cm-value" id="cmSensitivity">—</span>
+            </div>
+        </div>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:10px;">
+            All modes feed into each other: <a href="/mood" style="color:var(--accent)">Mood</a> adjusts impulse scoring →
+            <a href="/" style="color:var(--accent)">Analyze</a> uses triggers & mood →
+            <a href="/triggers" style="color:var(--accent)">Triggers</a> map patterns back here.
+        </p>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="card chart-card">
+            <h3>📈 Daily Spending</h3>
+            <div class="chart-container"><canvas id="dailyChart"></canvas></div>
+            <div class="chart-empty hidden" id="dailyEmpty">Make some transactions to see your spending trend!</div>
+        </div>
+        <div class="card chart-card">
+            <h3>🏷️ Category Breakdown</h3>
+            <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+            <div class="chart-empty hidden" id="categoryEmpty">Categories will appear after your first purchase.</div>
+        </div>
+    </div>
+
+    <!-- Savings Goals + Settings -->
+    <div class="settings-row">
+        <div class="card">
+            <h3 class="card-title">🎯 Savings Goals</h3>
+            <div id="goalsList" class="goals-list"></div>
+            <form id="goalForm" class="inline-form">
+                <input type="text" id="goalName" placeholder="Goal name (e.g. MacBook)" required>
+                <input type="number" id="goalTarget" placeholder="Target ₹" min="100" required>
+                <button type="submit" class="btn btn-primary btn-sm">Add Goal</button>
+            </form>
+        </div>
+        <div class="card">
+            <h3 class="card-title">👥 Accountability Contacts</h3>
+            <div id="contactsList" class="contacts-list"></div>
+            <form id="contactForm" class="inline-form">
+                <input type="text" id="contactName" placeholder="Contact name" required>
+                <input type="text" id="contactPhone" placeholder="Phone (optional)">
+                <button type="submit" class="btn btn-primary btn-sm">Add Contact</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Table -->
+    <div class="card">
+        <h3 class="card-title">📋 Recent Activity</h3>
+        <div id="dashRecentList" class="recent-list"></div>
+    </div>
+
+    <!-- Actions Row -->
+    <div class="actions-row">
+        <button class="btn btn-outline" onclick="loadDemoData()">
+            📦 Load 30-Day Demo Data
+        </button>
+        <button class="btn btn-outline btn-danger-outline" onclick="clearAllData()">
+            🗑️ Clear My Data
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/dashboard.js"></script>
+{% endblock %}

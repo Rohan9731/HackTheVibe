@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% block title %}VibeShield — Analyze Transaction{% endblock %}
+{% block content %}
+<div class="page-grid">
+    <!-- Left: Transaction Form -->
+    <div class="card form-card">
+        <div class="form-header-row">
+            <h2 class="card-title">💳 Analyze Transaction</h2>
+            <button class="settings-toggle" onclick="toggleSettings()" title="Settings">⚙️</button>
+        </div>
+        <p class="card-desc">Enter a purchase to check its impulse risk score</p>
+
+        <!-- User Context Bar -->
+        <div class="context-bar" id="contextBar">
+            <div class="context-item" id="ctxMood" title="Your current mood">
+                <span class="ctx-emoji">😐</span>
+                <span class="ctx-text">No mood logged</span>
+            </div>
+            <div class="context-item" id="ctxGoal" title="Active savings goal">
+                <span class="ctx-emoji">🎯</span>
+                <span class="ctx-text">No goal set</span>
+            </div>
+            <div class="context-item" id="ctxStreak" title="Control streak">
+                <span class="ctx-emoji">🔥</span>
+                <span class="ctx-text">0 day streak</span>
+            </div>
+        </div>
+
+        <form id="txForm" class="tx-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Amount (₹)</label>
+                    <input type="number" id="txAmount" placeholder="e.g. 850" min="1" required>
+                </div>
+                <div class="form-group merchant-input-group">
+                    <label>Merchant</label>
+                    <div class="merchant-input-wrapper">
+                        <input type="text" id="txMerchant" placeholder="e.g. Swiggy" required autocomplete="off">
+                        <div class="merchant-suggestions hidden" id="merchantSuggestions"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group smart-input-group">
+                <label>What are you buying? <span class="smart-badge">✨ Smart Detect</span></label>
+                <div class="smart-input-wrapper">
+                    <input type="text" id="txItem" placeholder="e.g. watch, pizza, headphones, sneakers..."
+                           autocomplete="off">
+                    <div class="smart-detect-result hidden" id="smartDetectResult">
+                        <span class="detect-icon">🎯</span>
+                        <span class="detect-text" id="detectText"></span>
+                    </div>
+                </div>
+                <div class="smart-suggestions hidden" id="smartSuggestions"></div>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="txCategory" required>
+                    <option value="">Select category...</option>
+                    <option value="food_delivery">🍔 Food Delivery</option>
+                    <option value="online_shopping">🛒 Online Shopping</option>
+                    <option value="gaming">🎮 Gaming</option>
+                    <option value="entertainment">🎬 Entertainment</option>
+                    <option value="alcohol">🍺 Alcohol</option>
+                    <option value="clothing">👕 Clothing</option>
+                    <option value="electronics">📱 Electronics</option>
+                    <option value="subscriptions">📺 Subscriptions</option>
+                    <option value="groceries">🥦 Groceries</option>
+                    <option value="utilities">💡 Utilities</option>
+                    <option value="transport">🚗 Transport</option>
+                    <option value="healthcare">🏥 Healthcare</option>
+                    <option value="education">📚 Education</option>
+                    <option value="other">📦 Other</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary btn-full" id="analyzeBtn">
+                🔍 Analyze Impulse Risk
+            </button>
+        </form>
+
+        <div class="demo-section">
+            <p class="demo-label">⚡ Quick Demo Scenarios:</p>
+            <div class="demo-buttons">
+                <button class="demo-btn demo-danger" onclick="fillDemo('Swiggy','food_delivery',850,1,6,'biryani')">
+                    🌙 1AM Midnight Snack
+                </button>
+                <button class="demo-btn demo-danger" onclick="fillDemo('Amazon','online_shopping',4500,23,5,'headphones')">
+                    🛒 11PM Shopping Spree
+                </button>
+                <button class="demo-btn demo-warning" onclick="fillDemo('Steam','gaming',2999,2,6,'game')">
+                    🎮 2AM Gaming Purchase
+                </button>
+                <button class="demo-btn demo-safe" onclick="fillDemo('BigBasket','groceries',800,10,2,'vegetables')">
+                    🥦 10AM Planned Groceries
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right: Results Area -->
+    <div class="results-area">
+        <!-- Score Card (hidden until analysis) -->
+        <div id="scoreCard" class="card score-card hidden">
+            <div class="score-header">
+                <div class="gauge-wrapper">
+                    <svg viewBox="0 0 200 200" class="gauge-svg">
+                        <defs>
+                            <linearGradient id="gGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="#2ed573"/>
+                                <stop offset="40%" stop-color="#ffa502"/>
+                                <stop offset="100%" stop-color="#ff4757"/>
+                            </linearGradient>
+                        </defs>
+                        <circle cx="100" cy="100" r="85" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14"/>
+                        <circle id="gaugeRing" cx="100" cy="100" r="85" fill="none"
+                                stroke="url(#gGrad)" stroke-width="14" stroke-linecap="round"
+                                stroke-dasharray="534.07" stroke-dashoffset="534.07"
+                                transform="rotate(-90 100 100)"/>
+                    </svg>
+                    <div class="gauge-center">
+                        <div class="gauge-score" id="gaugeScore">0</div>
+                        <div class="gauge-label">IMPULSE SCORE</div>
+                    </div>
+                </div>
+                <div class="score-meta">
+                    <div class="risk-badge" id="riskBadge">LOW</div>
+                    <div class="score-detail" id="txDetail"></div>
+                </div>
+            </div>
+
+            <!-- Connected Insights -->
+            <div class="connected-insights" id="connectedInsights"></div>
+
+            <!-- Factor Breakdown -->
+            <div class="factors-grid" id="factorsGrid"></div>
+
+            <!-- AI Message -->
+            <div class="ai-message" id="aiMessage"></div>
+
+            <!-- Regret + Savings -->
+            <div class="insight-row">
+                <div class="insight-box" id="regretBox"></div>
+                <div class="insight-box" id="savingsBox"></div>
+            </div>
+
+            <!-- Accountability Alert -->
+            <div class="accountability-alert hidden" id="accountabilityAlert"></div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons" id="actionButtons">
+                <button class="btn btn-danger" onclick="commitTransaction()">
+                    ⚡ Proceed Anyway
+                </button>
+                <button class="btn btn-success" onclick="cancelTransaction()">
+                    🛡️ Cancel & Save
+                </button>
+            </div>
+        </div>
+
+        <!-- Dopamine Lock Overlay (Enhanced Multi-Step) -->
+        <div id="dopamineLock" class="dopamine-lock hidden">
+            <div class="lock-content">
+                <div class="lock-icon">🔒</div>
+                <h2>Dopamine Lock Activated</h2>
+                <div class="lock-phase-indicator">
+                    <div class="phase-dot active" id="phaseDot1"></div>
+                    <div class="phase-line" id="phaseLine1"></div>
+                    <div class="phase-dot" id="phaseDot2"></div>
+                    <div class="phase-line" id="phaseLine2"></div>
+                    <div class="phase-dot" id="phaseDot3"></div>
+                </div>
+                <div class="lock-question-area">
+                    <p class="lock-phase-label" id="lockPhaseLabel">Phase 1: Reflect</p>
+                    <p class="lock-subtitle" id="lockQuestion"></p>
+                </div>
+                <div class="breathing-container" id="breathingContainer">
+                    <div class="breathing-circle" id="breathCircle"></div>
+                    <div class="breathing-text" id="breathText">Breathe In...</div>
+                </div>
+                <div class="lock-timer">
+                    <div class="timer-bar"><div class="timer-fill" id="timerFill"></div></div>
+                    <span class="timer-text" id="timerText">20s</span>
+                </div>
+                <div class="lock-buttons hidden" id="lockButtons">
+                    <button class="btn btn-danger btn-sm" onclick="overrideLock()">
+                        ⚡ Override & Buy
+                    </button>
+                    <button class="btn btn-success btn-sm" onclick="cancelFromLock()">
+                        🛡️ Walk Away & Save
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Celebration Overlay -->
+        <div id="celebration" class="celebration hidden">
+            <div class="celebration-content">
+                <div class="celebration-icon">🎉</div>
+                <h2 id="celebrationTitle">Money Saved!</h2>
+                <p id="celebrationMsg"></p>
+                <button class="btn btn-primary" onclick="closeCelebration()">Continue</button>
+            </div>
+        </div>
+
+        <!-- Empty state when no analysis yet -->
+        <div id="emptyState" class="card empty-state">
+            <div class="empty-icon">🔍</div>
+            <h3>Ready to Analyze</h3>
+            <p>Enter a transaction or try a demo scenario to see the impulse intelligence engine in action.</p>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="card" id="recentCard">
+            <h3 class="card-title">📋 Recent Transactions</h3>
+            <div id="recentList" class="recent-list">
+                <p class="empty-text">No transactions yet. Start by analyzing one above!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="settings-modal hidden" id="settingsModal">
+    <div class="settings-overlay" onclick="toggleSettings()"></div>
+    <div class="settings-panel">
+        <div class="settings-header">
+            <h3>⚙️ VibeShield Settings</h3>
+            <button class="settings-close" onclick="toggleSettings()">✕</button>
+        </div>
+        <div class="settings-body">
+            <div class="setting-group">
+                <label class="setting-label">🔒 Dopamine Lock Duration</label>
+                <p class="setting-desc">How long the cooling period lasts before you can decide</p>
+                <div class="setting-options" id="lockDurationOptions">
+                    <button class="setting-opt" data-val="10" onclick="setLockDuration(10)">10s</button>
+                    <button class="setting-opt" data-val="15" onclick="setLockDuration(15)">15s</button>
+                    <button class="setting-opt active" data-val="20" onclick="setLockDuration(20)">20s</button>
+                    <button class="setting-opt" data-val="30" onclick="setLockDuration(30)">30s</button>
+                    <button class="setting-opt" data-val="45" onclick="setLockDuration(45)">45s</button>
+                    <button class="setting-opt" data-val="60" onclick="setLockDuration(60)">60s</button>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label class="setting-label">🎯 Lock Sensitivity</label>
+                <p class="setting-desc">How easily the dopamine lock triggers</p>
+                <div class="setting-options" id="sensitivityOptions">
+                    <button class="setting-opt" data-val="high" onclick="setSensitivity('high')">🔴 High (Strict)</button>
+                    <button class="setting-opt active" data-val="medium" onclick="setSensitivity('medium')">🟡 Medium</button>
+                    <button class="setting-opt" data-val="low" onclick="setSensitivity('low')">🟢 Low (Relaxed)</button>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label class="setting-label">🫁 Breathing Exercise</label>
+                <p class="setting-desc">Show guided breathing animation during lock</p>
+                <div class="setting-toggle-row">
+                    <input type="checkbox" id="settingBreathing" checked onchange="saveSettings()">
+                    <label for="settingBreathing">Enabled</label>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label class="setting-label">📱 Accountability Alerts</label>
+                <p class="setting-desc">Alert your contacts about high-risk purchases</p>
+                <div class="setting-toggle-row">
+                    <input type="checkbox" id="settingAccountability" checked onchange="saveSettings()">
+                    <label for="settingAccountability">Enabled</label>
+                </div>
+            </div>
+            <div class="setting-group">
+                <label class="setting-label">😊 Mood-Aware Alerts</label>
+                <p class="setting-desc">Show mood-based warnings when spending while emotional</p>
+                <div class="setting-toggle-row">
+                    <input type="checkbox" id="settingMoodAlerts" checked onchange="saveSettings()">
+                    <label for="settingMoodAlerts">Enabled</label>
+                </div>
+            </div>
+        </div>
+        <div class="settings-footer">
+            <button class="btn btn-primary btn-sm" onclick="toggleSettings()">Done</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+{% endblock %}

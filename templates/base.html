@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}VibeShield{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="brand-icon">🛡️</span>
+            <span class="brand-text">VibeShield</span>
+            <span class="brand-tag">v2.0</span>
+        </div>
+        <div class="nav-links">
+            <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
+                <span>💳</span> Analyze
+            </a>
+            <a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">
+                <span>📊</span> Dashboard
+            </a>
+            <a href="/triggers" class="nav-link {% if request.url.path == '/triggers' %}active{% endif %}">
+                <span>🗺️</span> Triggers
+            </a>
+            <a href="/mood" class="nav-link {% if request.url.path == '/mood' %}active{% endif %}">
+                <span>😊</span> Mood
+            </a>
+        </div>
+        <div class="nav-user">
+            <span class="user-badge">{{ user_name }}</span>
+            <a href="/logout" class="logout-btn" title="Logout">🚪</a>
+        </div>
+    </nav>
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    <div id="toast-container"></div>
+    <script>
+        function showToast(msg, type='info', duration=3000) {
+            const c = document.getElementById('toast-container');
+            const t = document.createElement('div');
+            t.className = 'toast toast-' + type;
+            t.innerHTML = msg;
+            c.appendChild(t);
+            requestAnimationFrame(() => t.classList.add('show'));
+            setTimeout(() => {
+                t.classList.remove('show');
+                setTimeout(() => t.remove(), 300);
+            }, duration);
+        }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
