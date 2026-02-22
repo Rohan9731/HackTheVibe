@@ -389,7 +389,14 @@ function displayScore(data) {
     }
 
     document.getElementById('actionButtons').classList.toggle('hidden', data.should_lock);
-    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Scroll to results — use timeout so DOM updates first, with offset for navbar
+    setTimeout(() => {
+        const navbar = document.querySelector('.navbar');
+        const navH = navbar ? navbar.offsetHeight : 60;
+        const cardTop = card.getBoundingClientRect().top + window.pageYOffset - navH - 12;
+        window.scrollTo({ top: cardTop, behavior: 'smooth' });
+    }, 100);
 }
 
 // ─── Connected Insights (Deep Interconnection) ───
@@ -471,6 +478,7 @@ function animateCounter(el, from, to, duration) {
 function startDopamineLock(data) {
     const lockEl = document.getElementById('dopamineLock');
     lockEl.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll on mobile
     document.getElementById('lockButtons').classList.add('hidden');
 
     const questions = data.reflective_questions || [
@@ -552,6 +560,11 @@ function startDopamineLock(data) {
             document.getElementById('phaseLine2').className = 'phase-line filled';
 
             document.getElementById('lockButtons').classList.remove('hidden');
+            // On mobile, scroll lock content so buttons are visible
+            setTimeout(() => {
+                const btns = document.getElementById('lockButtons');
+                btns.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
     }, 1000);
 }
@@ -591,6 +604,7 @@ function cancelFromLock() {
 function closeLock() {
     if (lockTimer) clearInterval(lockTimer);
     document.getElementById('dopamineLock').classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scroll
     document.getElementById('actionButtons').classList.remove('hidden');
 }
 
@@ -648,6 +662,7 @@ async function cancelTransaction() {
 function showCelebration(amount, goalName) {
     const el = document.getElementById('celebration');
     el.classList.remove('hidden');
+    document.body.style.overflow = 'hidden'; // Prevent background scroll
     document.getElementById('celebrationTitle').textContent = '🛡️ Impulse Defeated!';
     let msg = `You just saved <strong>₹${amount.toLocaleString()}</strong>!`;
     if (goalName) msg += `<br>Credited to your goal: <strong>${goalName}</strong>`;
@@ -657,6 +672,9 @@ function showCelebration(amount, goalName) {
 
 function closeCelebration() {
     document.getElementById('celebration').classList.add('hidden');
+    document.body.style.overflow = ''; // Restore scroll
+    // Scroll back to top/form on mobile
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ─── Reset Form ───
@@ -735,7 +753,10 @@ async function loadUserContext() {
 
 // ─── Settings ───
 function toggleSettings() {
-    document.getElementById('settingsModal').classList.toggle('hidden');
+    const modal = document.getElementById('settingsModal');
+    modal.classList.toggle('hidden');
+    // Prevent body scroll when settings modal is open on mobile
+    document.body.style.overflow = modal.classList.contains('hidden') ? '' : 'hidden';
 }
 
 async function loadSettings() {

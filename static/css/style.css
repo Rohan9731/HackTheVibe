@@ -90,8 +90,9 @@ a { color: var(--accent); text-decoration: none; }
 .form-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 .form-group input, .form-group select {
     padding: 12px 14px; background: var(--bg-input); border: 1px solid var(--border);
-    border-radius: var(--radius-sm); color: var(--text-primary); font-size: 14px;
+    border-radius: var(--radius-sm); color: var(--text-primary); font-size: 16px;
     font-family: inherit; outline: none; transition: border-color 0.2s; width: 100%; box-sizing: border-box;
+    -webkit-appearance: none; appearance: none;
 }
 .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
 .form-group select { cursor: pointer; }
@@ -450,6 +451,12 @@ a { color: var(--accent); text-decoration: none; }
     .card { padding: 18px 16px; margin-bottom: 14px; }
     .card-title { font-size: 16px; }
 
+    /* Form card: remove sticky on mobile so results are visible */
+    .form-card { position: static !important; }
+
+    /* Results area: ensure visible */
+    .results-area { min-height: 0; }
+
     /* Stats row: 2 columns on tablet */
     .stats-row { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
     .stat-card { padding: 14px 10px; }
@@ -507,14 +514,23 @@ a { color: var(--accent); text-decoration: none; }
     .cross-mode-divider { display: none; }
     .cross-mode-item { min-width: unset; }
 
-    /* Lock overlay */
-    .lock-content { max-width: 90vw; padding: 20px 16px; }
+    /* Lock overlay — full screen on mobile, scrollable */
+    .dopamine-lock { padding: 16px; overflow-y: auto; align-items: flex-start; }
+    .lock-content { max-width: 100%; width: 100%; padding: 20px 16px; margin-top: 20px; }
     .lock-content h2 { font-size: 20px; }
     .lock-subtitle { font-size: 13px; }
     .lock-buttons { flex-direction: column; gap: 10px; }
-    .lock-buttons .btn { min-width: unset; width: 100%; }
-    .breathing-container { width: 130px; height: 130px; }
-    .breathing-circle { width: 100px; height: 100px; }
+    .lock-buttons .btn { min-width: unset; width: 100%; padding: 16px; font-size: 15px; }
+    .breathing-container { width: 120px; height: 120px; }
+    .breathing-circle { width: 90px; height: 90px; }
+
+    /* Heatmap: fit to screen */
+    .heatmap-container { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    #heatmapCanvas { max-width: none; }
+
+    /* Celebration — better on mobile */
+    .celebration { padding: 24px; }
+    .celebration-content { max-width: 90vw; }
 
     /* Celebration */
     .celebration-icon { font-size: 56px; }
@@ -593,12 +609,18 @@ a { color: var(--accent); text-decoration: none; }
     .login-desc { font-size: 12px; }
 
     /* Lock */
-    .lock-content { padding: 16px 12px; }
-    .lock-icon { font-size: 40px; }
-    .lock-content h2 { font-size: 18px; }
-    .lock-subtitle { font-size: 12px; min-height: 36px; }
-    .phase-line { width: 24px; }
+    .dopamine-lock { padding: 12px; }
+    .lock-content { margin-top: 10px; padding: 16px 12px; }
+    .lock-icon { font-size: 36px; margin-bottom: 8px; }
+    .lock-content h2 { font-size: 17px; }
+    .lock-subtitle { font-size: 12px; min-height: 32px; margin-bottom: 16px; }
+    .phase-line { width: 20px; }
+    .phase-dot { width: 10px; height: 10px; }
     .timer-text { font-size: 16px; }
+    .breathing-container { width: 100px; height: 100px; margin-bottom: 16px; }
+    .breathing-circle { width: 75px; height: 75px; }
+    .breathing-text { font-size: 12px; }
+    .lock-buttons .btn { padding: 14px; font-size: 14px; }
 
     /* Trigger context */
     .trigger-context-grid { grid-template-columns: 1fr 1fr !important; gap: 8px; }
