@@ -5,7 +5,6 @@ from app import database as db
 from app.models import SavingsGoalCreate, AccountabilityContactCreate
 from app.ml.trigger_mapper import get_trigger_data
 from app.ml.mood_correlator import correlate
-import numpy as np
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
@@ -30,7 +29,7 @@ async def get_stats(request: Request):
 
     # Calculate streaks and scores
     scores = [t.get("impulse_score", 0) for t in txs]
-    avg_score = round(float(np.mean(scores)), 1) if scores else 0
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
     total_spent = round(sum(t["amount"] for t in txs), 0)
 
     # Category breakdown for charts

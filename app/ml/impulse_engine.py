@@ -8,9 +8,24 @@ Lock threshold adapts to user's transaction history:
   > 20 transactions → 62 (calibrated)
 """
 import random
-import numpy as np
+import math
 from datetime import datetime, timedelta
 from typing import Optional
+
+
+def _mean(lst):
+    return sum(lst) / len(lst) if lst else 0
+
+
+def _std(lst):
+    if len(lst) < 2:
+        return _mean(lst) * 0.5
+    m = _mean(lst)
+    return math.sqrt(sum((x - m) ** 2 for x in lst) / len(lst))
+
+
+def _clip(val, lo, hi):
+    return max(lo, min(hi, val))
 
 CATEGORY_RISK: dict[str, float] = {
     "food_delivery": 0.85, "gaming": 0.92, "online_shopping": 0.80,
@@ -294,12 +309,12 @@ def _amount_score(amount: float, history: list[dict]) -> float:
             return 0.30
         return 0.15
     amounts = [t["amount"] for t in history]
-    avg = float(np.mean(amounts))
-    std = float(np.std(amounts)) if len(amounts) > 1 else avg * 0.5
+    avg = _mean(amounts)
+    std = _std(amounts) if len(amounts) > 1 else avg * 0.5
     if std == 0:
         return 0.55 if amount > avg else 0.15
     z = (amount - avg) / std
-    return float(np.clip(0.50 + z * 0.20, 0.0, 1.0))
+    return _clip(0.50 + z * 0.20, 0.0, 1.0)
 
 
 def _freq_score(ts: datetime, history: list[dict]) -> tuple[float, int]:
@@ -491,8 +506,9 @@ def train_model(user_id: str, transactions: list[dict]):
             y.append(1 if t.get("impulse_score", 0) >= 55 else 0)
         if len(set(y)) < 2:
             return
+        import numpy as _np
         clf = RandomForestClassifier(n_estimators=50, max_depth=5, random_state=42)
-        clf.fit(np.array(X), np.array(y))
+        clf.fit(_np.array(X), _np.array(y))
         _models[user_id] = clf
     except Exception:
         pass
@@ -505,8 +521,9 @@ def ml_impulse_probability(user_id, amount, category, timestamp_str):
         return None
     ts = datetime.fromisoformat(timestamp_str)
     try:
+        import numpy as _np
         prob = model.predict_proba(
-            np.array([[ts.hour, ts.weekday(), amount,
+            _np.array([[ts.hour, ts.weekday(), amount,
                        CATEGORY_RISK.get(category, 0.4)]])
         )[0]
         return float(prob[1]) if len(prob) > 1 else float(prob[0])

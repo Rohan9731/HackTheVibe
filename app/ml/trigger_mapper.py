@@ -1,7 +1,10 @@
 """Trigger Mapping AI — personal spending pattern analysis per user."""
 from datetime import datetime
 from collections import defaultdict
-import numpy as np
+
+
+def _mean(lst):
+    return sum(lst) / len(lst) if lst else 0
 
 
 def build_heatmap(transactions: list[dict]) -> list[list[float]]:
@@ -51,8 +54,8 @@ def _weekend_ratio(transactions):
     for t in transactions:
         d = datetime.fromisoformat(t["timestamp"]).weekday()
         (we if d >= 5 else wd).append(t["amount"])
-    avg_we = float(np.mean(we)) if we else 0
-    avg_wd = float(np.mean(wd)) if wd else 1
+    avg_we = _mean(we)
+    avg_wd = _mean(wd) if wd else 1
     return round(avg_we / avg_wd, 1) if avg_wd > 0 else 0
 
 

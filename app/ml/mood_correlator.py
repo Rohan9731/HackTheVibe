@@ -1,7 +1,10 @@
 """Mood-to-Money Correlation Engine — links emotional states to spending."""
 from datetime import datetime, timedelta
 from collections import defaultdict
-import numpy as np
+
+
+def _mean(lst):
+    return sum(lst) / len(lst) if lst else 0
 
 MOOD_EMOJIS = {
     "happy": "😊", "neutral": "😐", "sad": "😔", "angry": "😡",
@@ -45,10 +48,10 @@ def correlate(transactions, moods):
             "intensity": m.get("intensity", 5),
         })
 
-    mood_spend = {k: round(float(np.mean(v)), 0) for k, v in mood_totals.items()}
+    mood_spend = {k: round(_mean(v), 0) for k, v in mood_totals.items()}
     mood_count = {k: len(v) for k, v in mood_totals.items()}
     all_s = [s for lst in mood_totals.values() for s in lst]
-    baseline = float(np.mean(all_s)) if all_s else 0
+    baseline = _mean(all_s)
 
     insights = []
     if baseline > 0:

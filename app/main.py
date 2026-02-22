@@ -29,8 +29,14 @@ app.include_router(dashboard.router)
 @app.on_event("startup")
 def startup():
     init_db()
-    print("✅ VibeShield DB initialized (per-user isolation)")
-    print("🚀 Open http://localhost:8000 to start")
+    if not os.environ.get("VERCEL"):
+        print("✅ VibeShield DB initialized (per-user isolation)")
+        print("🚀 Open http://localhost:8000 to start")
+
+
+# Auto-init DB on Vercel cold starts (no startup event in serverless)
+if os.environ.get("VERCEL"):
+    init_db()
 
 
 # ─── Auth helpers ───

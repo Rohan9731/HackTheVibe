@@ -5,7 +5,11 @@ Every table has user_id so each user gets their own experience.
 import sqlite3, os
 from contextlib import contextmanager
 
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "vibeshield.db")
+# On Vercel (serverless), filesystem is read-only except /tmp
+if os.environ.get("VERCEL"):
+    DB_PATH = "/tmp/vibeshield.db"
+else:
+    DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "vibeshield.db")
 
 def get_db():
     conn = sqlite3.connect(DB_PATH)
