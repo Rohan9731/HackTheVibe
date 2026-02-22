@@ -178,9 +178,20 @@ merchantInput.addEventListener('input', function() {
     merchantSugBox.classList.remove('hidden');
 });
 
-merchantSugBox.addEventListener('click', function(e) {
+merchantSugBox.addEventListener('mousedown', function(e) {
+    e.preventDefault(); // Prevent blur from firing before selection
     const item = e.target.closest('.merchant-sug-item');
     if (!item) return;
+    merchantInput.value = item.dataset.name;
+    const cat = item.dataset.cat;
+    if (cat) document.getElementById('txCategory').value = cat;
+    merchantSugBox.classList.add('hidden');
+});
+
+merchantSugBox.addEventListener('touchstart', function(e) {
+    const item = e.target.closest('.merchant-sug-item');
+    if (!item) return;
+    e.preventDefault(); // Prevent blur from firing before selection
     merchantInput.value = item.dataset.name;
     const cat = item.dataset.cat;
     if (cat) document.getElementById('txCategory').value = cat;
