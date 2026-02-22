@@ -19,16 +19,16 @@
         </div>
         <div class="nav-links">
             <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">
-                <span>💳</span> Analyze
+                <span>💳</span> <span class="nav-label">Analyze</span>
             </a>
             <a href="/dashboard" class="nav-link {% if request.url.path == '/dashboard' %}active{% endif %}">
-                <span>📊</span> Dashboard
+                <span>📊</span> <span class="nav-label">Dashboard</span>
             </a>
             <a href="/triggers" class="nav-link {% if request.url.path == '/triggers' %}active{% endif %}">
-                <span>🗺️</span> Triggers
+                <span>🗺️</span> <span class="nav-label">Triggers</span>
             </a>
             <a href="/mood" class="nav-link {% if request.url.path == '/mood' %}active{% endif %}">
-                <span>😊</span> Mood
+                <span>😊</span> <span class="nav-label">Mood</span>
             </a>
         </div>
         <div class="nav-user">
